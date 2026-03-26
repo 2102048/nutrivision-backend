@@ -66,24 +66,58 @@ class FoodClassifier:
         if not url:
             return
 
-        # ✅ CREATE FOLDER FIRST (IMPORTANT FIX)
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
+        # ✅ Skip if valid file already exists
         if os.path.exists(path):
-            logger.info(f"✅ File already exists: {path}")
-            return
+            size = os.path.getsize(path)
+
+            # Different rules for different files
+            if path.endswith(".keras") and size > 10 * 1024 * 1024:
+                logger.info(f"✅ Valid model already exists: {path}")
+                return
+
+            if path.endswith(".json") and size > 100:
+                logger.info(f"✅ Valid JSON already exists: {path}")
+                return
 
         logger.info(f"⬇️ Downloading: {url}")
 
-        r = requests.get(url, stream=True)
-        if r.status_code != 200:
+        session = requests.Session()
+        response = session.get(url, stream=True)
+
+        # 🔥 Google Drive confirm fix
+        for key, value in response.cookies.items():
+            if key.startswith("download_warning"):
+                url = url + "&confirm=" + value
+                response = session.get(url, stream=True)
+                break
+
+        if response.status_code != 200:
             raise RuntimeError(f"Download failed: {url}")
 
-        with open(path, "wb") as f:
-            for chunk in r.iter_content(1024):
-                f.write(chunk)
+        temp_path = path + ".tmp"
 
-        logger.info(f"✅ Downloaded: {path}")
+        with open(temp_path, "wb") as f:
+            for chunk in response.iter_content(1024 * 1024):
+                if chunk:
+                    f.write(chunk)
+
+        # ✅ VALIDATION (different per file type)
+        size = os.path.getsize(temp_path)
+
+        if path.endswith(".keras") and size < 5 * 1024 * 1024:
+            os.remove(temp_path)
+            raise RuntimeError("❌ Model file corrupted (too small)")
+
+        if path.endswith(".json") and size < 50:
+            os.remove(temp_path)
+            raise RuntimeError("❌ JSON file corrupted")
+
+        # ✅ Replace safely
+        os.replace(temp_path, path)
+
+        logger.info(f"✅ Downloaded successfully: {path}")
 
     # =========================
     # 🚀 LOAD MODELS
