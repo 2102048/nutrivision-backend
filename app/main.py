@@ -8,8 +8,12 @@ from app.routes import health
 from app.routes.ai_assistant import router as ai_router
 from app.routes import notifications
 from app import firebase
+from app.firebase import init_firebase
 
 import os
+
+# ✅ INIT FIREBASE HERE
+init_firebase()
 
 # =========================
 # 🗄️ CREATE TABLES
