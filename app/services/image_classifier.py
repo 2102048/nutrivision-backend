@@ -66,59 +66,30 @@ class FoodClassifier:
         if not url:
             return
 
+        import gdown
+
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
-        # ✅ Skip if valid file already exists
-        if os.path.exists(path):
-            size = os.path.getsize(path)
+        # ✅ Skip if already exists (safe for localhost)
+        if os.path.exists(path) and os.path.getsize(path) > 1_000_000:
+            logger.info(f"✅ File already exists: {path}")
+            return
 
-            # Different rules for different files
-            if path.endswith(".keras") and size > 10 * 1024 * 1024:
-                logger.info(f"✅ Valid model already exists: {path}")
-                return
+        logger.info(f"⬇️ Downloading from Google Drive: {url}")
 
-            if path.endswith(".json") and size > 100:
-                logger.info(f"✅ Valid JSON already exists: {path}")
-                return
+        try:
+            # 🔥 gdown handles everything automatically
+            gdown.download(url, path, quiet=False)
 
-        logger.info(f"⬇️ Downloading: {url}")
+        except Exception as e:
+            logger.error(f"❌ Download failed: {str(e)}")
+            raise RuntimeError("Download failed")
 
-        session = requests.Session()
-        response = session.get(url, stream=True)
+        # ✅ FINAL VALIDATION
+        if not os.path.exists(path) or os.path.getsize(path) < 1000:
+            raise RuntimeError("❌ Downloaded file is invalid or corrupted")
 
-        # 🔥 Google Drive confirm fix
-        for key, value in response.cookies.items():
-            if key.startswith("download_warning"):
-                url = url + "&confirm=" + value
-                response = session.get(url, stream=True)
-                break
-
-        if response.status_code != 200:
-            raise RuntimeError(f"Download failed: {url}")
-
-        temp_path = path + ".tmp"
-
-        with open(temp_path, "wb") as f:
-            for chunk in response.iter_content(1024 * 1024):
-                if chunk:
-                    f.write(chunk)
-
-        # ✅ VALIDATION (different per file type)
-        size = os.path.getsize(temp_path)
-
-        if path.endswith(".keras") and size < 5 * 1024 * 1024:
-            os.remove(temp_path)
-            raise RuntimeError("❌ Model file corrupted (too small)")
-
-        if path.endswith(".json") and size < 50:
-            os.remove(temp_path)
-            raise RuntimeError("❌ JSON file corrupted")
-
-        # ✅ Replace safely
-        os.replace(temp_path, path)
-
-        logger.info(f"✅ Downloaded successfully: {path}")
-
+        logger.info(f"✅ Download successful: {path}")
     # =========================
     # 🚀 LOAD MODELS
     # =========================
