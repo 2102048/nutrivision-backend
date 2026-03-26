@@ -29,12 +29,12 @@ class FoodClassifier:
         self.imagenet_model = None
         self.indian_labels = []
 
-        # Paths
+        # 👇 Paths (local fallback)
         self.indian_model_path = settings.INDIAN_MODEL_PATH
         self.modern_model_path = settings.MODERN_MODEL_PATH
         self.labels_path = settings.INDIAN_LABELS_PATH
 
-        # URLs (Railway ENV)
+        # 👇 URLs (Railway)
         self.indian_model_url = os.getenv("INDIAN_MODEL_URL")
         self.modern_model_url = os.getenv("MODERN_MODEL_URL")
         self.labels_url = os.getenv("INDIAN_LABELS_URL")
@@ -60,37 +60,28 @@ class FoodClassifier:
         self.load_models()
 
     # =========================
-    # 📥 DOWNLOAD FILE (FIXED)
+    # 📥 DOWNLOAD FILE (RAILWAY)
     # =========================
     def download_file(self, url, path):
         if not url:
             return
 
-        # Create directory
+        # ✅ CREATE FOLDER FIRST (IMPORTANT FIX)
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
-        # 🔥 FORCE DELETE OLD FILE (IMPORTANT)
         if os.path.exists(path):
-            logger.info(f"♻️ Removing old file: {path}")
-            os.remove(path)
+            logger.info(f"✅ File already exists: {path}")
+            return
 
         logger.info(f"⬇️ Downloading: {url}")
 
-        response = requests.get(url, stream=True)
-        if response.status_code != 200:
+        r = requests.get(url, stream=True)
+        if r.status_code != 200:
             raise RuntimeError(f"Download failed: {url}")
 
         with open(path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-
-        # 🔍 VALIDATE FILE SIZE
-        size = os.path.getsize(path)
-        logger.info(f"📦 File size: {size} bytes")
-
-        if size < 1_000_000:  # <1MB = wrong file
-            raise RuntimeError("❌ Downloaded file is too small (likely HTML, not model)")
+            for chunk in r.iter_content(1024):
+                f.write(chunk)
 
         logger.info(f"✅ Downloaded: {path}")
 
@@ -101,25 +92,22 @@ class FoodClassifier:
         try:
             logger.info("🔄 Loading Models...")
 
-            # Download models (Railway)
+            # 🔥 Step 1: Download if running on Railway
             self.download_file(self.indian_model_url, self.indian_model_path)
             self.download_file(self.modern_model_url, self.modern_model_path)
             self.download_file(self.labels_url, self.labels_path)
 
-            # Validate existence
-            for file_path in [
-                self.indian_model_path,
-                self.modern_model_path,
-                self.labels_path
-            ]:
-                if not os.path.exists(file_path):
-                    raise FileNotFoundError(f"{file_path} not found")
+            # 🔥 Step 2: Validate files
+            if not os.path.exists(self.indian_model_path):
+                raise FileNotFoundError(f"{self.indian_model_path} not found")
 
-            # 🔥 LOG FILE SIZES (DEBUG)
-            logger.info(f"📦 Indian model: {os.path.getsize(self.indian_model_path)} bytes")
-            logger.info(f"📦 Modern model: {os.path.getsize(self.modern_model_path)} bytes")
+            if not os.path.exists(self.modern_model_path):
+                raise FileNotFoundError(f"{self.modern_model_path} not found")
 
-            # Load models
+            if not os.path.exists(self.labels_path):
+                raise FileNotFoundError(f"{self.labels_path} not found")
+
+            # 🔥 Step 3: Load models
             self.indian_model = keras.models.load_model(self.indian_model_path)
             self.modern_model = keras.models.load_model(self.modern_model_path)
             self.imagenet_model = EfficientNetB0(weights="imagenet")
@@ -140,7 +128,6 @@ class FoodClassifier:
         try:
             contents = await uploaded_file.read()
             image = Image.open(io.BytesIO(contents)).convert("RGB").resize((224, 224))
-
             img = np.expand_dims(np.array(image).astype("float32"), axis=0)
             img = preprocess_input(img)
 
@@ -156,7 +143,7 @@ class FoodClassifier:
             m_label = self.food101_labels[m_idx]
             i_label = self.indian_labels[i_idx]
 
-            # 🔥 Smart Decision Logic
+            # 🔥 Smart Logic
             if "salad" in m_label.lower() and m_conf > 0.25:
                 return m_label.replace("_", " ")
 
