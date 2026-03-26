@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+.venv/
+venv/
+pyvenv.cfg
+
+# Environment
+.env
+
+# ML models (VERY IMPORTANT)
+app/ml/
+*.keras
+*.h5
+
+# Firebase key (SECRET)
+firebase_key.json
+
+# Node (just in case)
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+firebase_key.json
