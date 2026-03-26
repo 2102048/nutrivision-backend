@@ -66,12 +66,19 @@ class FoodClassifier:
         if not url:
             return
 
+        # ✅ CREATE FOLDER FIRST (IMPORTANT FIX)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+
         if os.path.exists(path):
             logger.info(f"✅ File already exists: {path}")
             return
 
         logger.info(f"⬇️ Downloading: {url}")
+
         r = requests.get(url, stream=True)
+        if r.status_code != 200:
+            raise RuntimeError(f"Download failed: {url}")
+
         with open(path, "wb") as f:
             for chunk in r.iter_content(1024):
                 f.write(chunk)
