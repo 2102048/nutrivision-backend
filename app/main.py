@@ -28,8 +28,12 @@ app = FastAPI(title="NutriVision API")
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 origins = [
-    "http://localhost:5173",  # Vite local
+    "http://localhost:5173",
+    "https://nutrivision-app-seven.vercel.app"
 ]
+
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+
 
 if FRONTEND_URL:
     origins.append(FRONTEND_URL)
