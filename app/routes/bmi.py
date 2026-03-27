@@ -64,46 +64,77 @@ def smart_bmi(
     tdee = bmr * activity_map[data.activity_level]
 
     # =============================
-    # CALORIE RECOMMENDATION
+    # 🔥 CALORIE RECOMMENDATION (SMART)
+    # =============================
+    goal_type = data.goal_type.lower()
+
+    if goal_type == "gain":
+        recommended_calories = tdee + 400
+        recommendation = "Calorie surplus for healthy weight gain."
+    elif goal_type == "lose":
+        recommended_calories = tdee - 400
+        recommendation = "Calorie deficit for fat loss."
+    else:
+        recommended_calories = tdee
+        recommendation = "Maintain current weight."
+        
+    if category == "Underweight" and goal_type == "lose":
+        recommendation = "You are underweight. Weight loss is not recommended."
+
+    if category == "Obese" and goal_type == "gain":
+        recommendation = "You are overweight. Weight gain is not recommended."
+
+    # =============================
+    # 🔥 MACRO SPLIT (SMART)
     # =============================
     if category == "Underweight":
-        recommended_calories = tdee + 400
-    elif category == "Normal":
-        recommended_calories = tdee
-    elif category == "Overweight":
-        recommended_calories = tdee - 400
+        protein_ratio = 0.25
+        carbs_ratio = 0.50
+        fat_ratio = 0.25
+    elif category in ["Overweight", "Obese"]:
+        protein_ratio = 0.35
+        carbs_ratio = 0.35
+        fat_ratio = 0.30
     else:
-        recommended_calories = tdee - 600
+        protein_ratio = 0.30
+        carbs_ratio = 0.45
+        fat_ratio = 0.25
 
-    recommended_calories = round(recommended_calories, 2)
+    protein = round((recommended_calories * protein_ratio) / 4, 2)
+    carbs = round((recommended_calories * carbs_ratio) / 4, 2)
+    fat = round((recommended_calories * fat_ratio) / 9, 2)
 
     # =============================
-    # MACRO SPLIT
+    # 🧠 RECOMMENDATION TEXT
     # =============================
-    protein = round((recommended_calories * 0.30) / 4, 2)
-    carbs = round((recommended_calories * 0.45) / 4, 2)
-    fat = round((recommended_calories * 0.25) / 9, 2)
+    if category == "Underweight":
+        recommendation = "You are underweight. Increase calorie intake and focus on nutrient-rich foods."
+    elif category == "Normal":
+        recommendation = "You are in a healthy range. Maintain your current lifestyle."
+    elif category == "Overweight":
+        recommendation = "You are slightly overweight. A mild calorie deficit and activity will help."
+    else:
+        recommendation = "You are in the obese range. Follow a structured calorie deficit and exercise plan."
 
     # =============================
     # SAVE BMI RECORD
     # =============================
     bmi_record = models.BMIRecord(
-    height_cm=data.height_cm,
-    weight_kg=data.weight_kg,
-    age=data.age,
-    gender=data.gender,
-    activity_level=data.activity_level,
-    bmi=bmi,
-    category=category,
-    recommended_calories=recommended_calories,
-    user_id=current_user.id
-)
-
+        height_cm=data.height_cm,
+        weight_kg=data.weight_kg,
+        age=data.age,
+        gender=data.gender,
+        activity_level=data.activity_level,
+        bmi=bmi,
+        category=category,
+        recommended_calories=recommended_calories,
+        user_id=current_user.id
+    )
 
     db.add(bmi_record)
 
     # =============================
-    # AUTO SYNC GOALS (FIXED HERE)
+    # 🔥 AUTO SYNC GOALS (FIXED)
     # =============================
     goal = db.query(models.UserGoal).filter(
         models.UserGoal.user_id == current_user.id
@@ -114,13 +145,15 @@ def smart_bmi(
         goal.protein_goal = protein
         goal.carbs_goal = carbs
         goal.fat_goal = fat
+        goal.goal_source = "bmi"   # ✅ IMPORTANT FIX
     else:
         new_goal = models.UserGoal(
             calorie_goal=recommended_calories,
             protein_goal=protein,
             carbs_goal=carbs,
             fat_goal=fat,
-            user_id=current_user.id
+            user_id=current_user.id,
+            goal_source="bmi"   # ✅ IMPORTANT FIX
         )
         db.add(new_goal)
 
@@ -138,7 +171,7 @@ def smart_bmi(
         "protein_grams": protein,
         "carbs_grams": carbs,
         "fat_grams": fat,
-        "recommendation": "Goals automatically updated successfully."
+        "recommendation": recommendation
     }
 
 

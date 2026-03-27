@@ -145,6 +145,7 @@ class SmartBMIRequest(BaseModel):
     age: int = Field(gt=0)
     gender: str
     activity_level: str
+    goal_type: str = "maintain"
 
 
 class SmartBMIResponse(BaseModel):
