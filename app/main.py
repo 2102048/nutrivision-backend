@@ -29,7 +29,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 origins = [
     "http://localhost:5173",
-    "https://nutrivision-app-seven.vercel.app"
+    "https://nutrivision-frontend.vercel.app"
 ]
 
 FRONTEND_URL = os.getenv("FRONTEND_URL")
