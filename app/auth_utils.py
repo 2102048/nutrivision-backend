@@ -158,19 +158,40 @@ def send_reset_email(to_email: str, token: str):
             },
             "to": [{"email": to_email}],
             "subject": "Reset Your Password",
+
+            # ✅ STEP 3 — ADD THIS (TEXT VERSION)
+            "textContent": f"Reset your password using this link: {reset_link}",
+
+            # ✅ STEP 2 — FIXED HTML (FULL STRUCTURE)
             "htmlContent": f"""
-            <h3>Password Reset</h3>
-            <p>Click below:</p>
-            <a href="{reset_link}">{reset_link}</a>
+            <html>
+            <body>
+                <h2>Reset Your Password</h2>
+                <p>You requested a password reset.</p>
+                
+                <p>
+                <a href="{reset_link}" 
+                style="padding:10px 15px; background:#4CAF50; color:white; text-decoration:none;">
+                    Reset Password
+                </a>
+                </p>
+
+                <p>If you didn’t request this, ignore this email.</p>
+            </body>
+            </html>
             """
         }
-
         response = requests.post(url, json=data, headers=headers)
 
-        print("Brevo:", response.status_code, response.text)
+        print("========== EMAIL DEBUG ==========")
+        print("Status:", response.status_code)
+        print("Response:", response.text)
+        print("HTML SENT:", data["htmlContent"])
+        print("=================================")
 
         if response.status_code not in [200, 201]:
-            raise Exception("Email failed")
+            print("FULL ERROR:", response.text)
+            raise Exception(f"Email failed: {response.text}")
 
     except Exception as e:
         print("EMAIL ERROR:", str(e))
