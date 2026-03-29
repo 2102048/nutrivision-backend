@@ -170,10 +170,7 @@ This link expires in 10 minutes.
         server.quit()
 
         print("Reset email sent successfully")
-        print("SMTP_SERVER:", SMTP_SERVER)
-        print("SMTP_PORT:", SMTP_PORT)
-        print("SMTP_EMAIL:", SMTP_EMAIL)
-        print("SMTP_PASSWORD exists:", bool(SMTP_PASSWORD))
+        
 
     except Exception as e:
         raise Exception(f"Email sending failed: {str(e)}")
