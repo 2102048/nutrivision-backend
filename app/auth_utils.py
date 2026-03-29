@@ -219,7 +219,8 @@ def get_current_user(
 
     return user
 
-schemas.py
+schemas.ForgotPassword
+schemas.ResetPassword
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from pydantic import BaseModel, Field
