@@ -27,6 +27,7 @@ SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 SMTP_EMAIL = os.getenv("SMTP_EMAIL")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
 # ===============================
@@ -136,7 +137,7 @@ def send_reset_email(to_email: str, reset_token: str):
 
     try:
 
-        reset_link = f"http://localhost:5173/reset-password/{reset_token}"
+        reset_link = f"{FRONTEND_URL}/reset-password/{reset_token}"
 
         subject = "NutriVision Password Reset"
 
