@@ -49,27 +49,22 @@ def nutrition(
     # Log the incoming request to debug 404s/mismatches
     print(f"DEBUG: Nutrition Request - Food: {food}, Qty: {quantity}, Unit: {unit}")
 
-    # Clean quantity value
-    if quantity in ["null", "", None]:
-        quantity_val = 1.0
-    else:
-        try:
-            quantity_val = float(quantity)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid quantity format")
+    # Quantity not needed anymore for base response
+    quantity_val = 100
 
     # Call Nutrition Service
     # We pass the unit as-is; service handles the math
-    data = get_nutrition(food, quantity_val, unit)
-
+    # ✅ ALWAYS RETURN BASE 100g DATA
+    data = get_nutrition(food, 100, "g")
+    
     if not data:
         print(f"DEBUG: No data returned from Edamam for {food}")
         raise HTTPException(status_code=404, detail="Nutrition data not found")
 
     return {
         "food": food,
-        "quantity": quantity_val,
-        "unit": unit,
+        "quantity": 100,
+        "unit": "g",
         "nutrition": data
     }
     

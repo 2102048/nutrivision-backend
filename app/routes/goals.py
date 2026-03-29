@@ -114,10 +114,18 @@ def update_goal(
         db.add(goal)
 
     # Update values
-    goal.calorie_goal = goal_data.calorie_goal
-    goal.protein_goal = goal_data.protein_goal
-    goal.carbs_goal = goal_data.carbs_goal
-    goal.fat_goal = goal_data.fat_goal
+    # Update macros first
+    goal.protein_goal = goal_data.protein_goal or 0
+    goal.carbs_goal = goal_data.carbs_goal or 0
+    goal.fat_goal = goal_data.fat_goal or 0
+
+    # 🔥 AUTO CALCULATE CALORIES
+    goal.calorie_goal = (
+        goal.protein_goal * 4 +
+        goal.carbs_goal * 4 +
+        goal.fat_goal * 9
+    )
+
     goal.goal_source = goal_data.goal_source
 
     # ==============================
@@ -142,7 +150,11 @@ def update_goal(
         {
             "user_id": current_user.id,
             "goal_date": today,
-            "calorie_goal": goal_data.calorie_goal,
+            "calorie_goal": (
+                (goal_data.protein_goal or 0) * 4 +
+                (goal_data.carbs_goal or 0) * 4 +
+                (goal_data.fat_goal or 0) * 9
+            ),
             "protein_goal": goal_data.protein_goal,
             "carbs_goal": goal_data.carbs_goal,
             "fat_goal": goal_data.fat_goal,
