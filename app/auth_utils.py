@@ -2,8 +2,7 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from dotenv import load_dotenv
-from email.mime.text import MIMEText
-import smtplib
+import resend
 import os
 
 from fastapi import Depends, HTTPException, status
@@ -131,49 +130,28 @@ def verify_token(token: str):
 # ===============================
 
 def send_reset_email(to_email: str, reset_token: str):
-    """
-    Send password reset email
-    """
-
     try:
+        resend.api_key = os.getenv("RESEND_API_KEY")
 
         reset_link = f"{FRONTEND_URL}/reset-password/{reset_token}"
 
-        subject = "NutriVision Password Reset"
+        response = resend.Emails.send({
+            "from": "onboarding@resend.dev",
+            "to": to_email,
+            "subject": "NutriVision Password Reset",
+            "html": f"""
+                <h2>Reset Your Password</h2>
+                <p>Click below:</p>
+                <a href="{reset_link}">{reset_link}</a>
+                <p>This link expires in 10 minutes.</p>
+            """
+        })
 
-        body = f"""
-Click the link below to reset your password:
-
-{reset_link}
-
-This link expires in 10 minutes.
-"""
-
-        msg = MIMEText(body)
-
-        msg["Subject"] = subject
-        msg["From"] = SMTP_EMAIL
-        msg["To"] = to_email
-
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-
-        server.starttls()
-
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-
-        server.sendmail(
-            SMTP_EMAIL,
-            to_email,
-            msg.as_string()
-        )
-
-        server.quit()
-
-        print("Reset email sent successfully")
-        
+        print("✅ Email sent:", response)
 
     except Exception as e:
-        raise Exception(f"Email sending failed: {str(e)}")
+        print("❌ EMAIL ERROR:", str(e))
+        raise Exception("Failed to send email")
 
 
 # ===============================
