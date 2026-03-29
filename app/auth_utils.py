@@ -172,8 +172,7 @@ This link expires in 10 minutes.
         print("Reset email sent successfully")
 
     except Exception as e:
-
-        print("Email sending failed:", e)
+        raise Exception(f"Email sending failed: {str(e)}")
 
 
 # ===============================

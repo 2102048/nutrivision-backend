@@ -80,7 +80,10 @@ def forgot_password(data: schemas.ForgotPassword, db: Session = Depends(get_db))
 
     reset_token = create_reset_token(user.email)
 
-    send_reset_email(user.email, reset_token)
+    try:
+        send_reset_email(user.email, reset_token)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     return {"message": "Password reset email sent"}
 
