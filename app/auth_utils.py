@@ -19,7 +19,11 @@ from .models import User
 # LOAD ENV VARIABLES
 # ===============================
 
-load_dotenv()
+from dotenv import load_dotenv
+import os
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
@@ -138,7 +142,15 @@ def send_reset_email(to_email: str, reset_token: str):
 
     try:
 
-        reset_link = f"http://localhost:5173/reset-password/{reset_token}"
+        FRONTEND_URL = os.getenv("FRONTEND_URL")
+        
+        if not FRONTEND_URL:
+            raise Exception("FRONTEND_URL not set in environment variables")
+        
+        print("FRONTEND_URL:", os.getenv("FRONTEND_URL"))
+        
+        reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
+        print("RESET LINK:", reset_link)
 
         subject = "NutriVision Password Reset"
 
@@ -156,6 +168,10 @@ This link expires in 10 minutes.
         msg["From"] = SMTP_EMAIL
         msg["To"] = to_email
 
+
+        print("SMTP_SERVER:", SMTP_SERVER)
+        print("SMTP_PORT:", SMTP_PORT)
+        print("SMTP_EMAIL:", SMTP_EMAIL)
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
 
         server.starttls()
@@ -173,8 +189,8 @@ This link expires in 10 minutes.
         print("Reset email sent successfully")
 
     except Exception as e:
-
-        print("Email sending failed:", e)
+        print("Email sending failed:", str(e))
+        raise Exception(f"SMTP ERROR: {str(e)}")
 
 
 # ===============================
