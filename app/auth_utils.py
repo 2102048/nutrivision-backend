@@ -4,6 +4,7 @@ from passlib.context import CryptContext
 from dotenv import load_dotenv
 from email.mime.text import MIMEText
 import smtplib
+import requests
 import os
 
 from app import schemas
@@ -19,20 +20,13 @@ from .models import User
 # LOAD ENV VARIABLES
 # ===============================
 
-from dotenv import load_dotenv
-import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 
-SMTP_SERVER = os.getenv("SMTP_SERVER")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_EMAIL = os.getenv("SMTP_EMAIL")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+
 
 
 # ===============================
@@ -135,63 +129,52 @@ def verify_token(token: str):
 # SEND RESET EMAIL
 # ===============================
 
-def send_reset_email(to_email: str, reset_token: str):
-    """
-    Send password reset email
-    """
-
+def send_reset_email(to_email: str, token: str):
     try:
+        import requests
+        import os
 
-        FRONTEND_URL = os.getenv("FRONTEND_URL")
-        
-        if not FRONTEND_URL:
-            raise Exception("FRONTEND_URL not set in environment variables")
-        
-        print("FRONTEND_URL:", os.getenv("FRONTEND_URL"))
-        
-        reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
-        print("RESET LINK:", reset_link)
+        url = "https://api.brevo.com/v3/smtp/email"
 
-        subject = "NutriVision Password Reset"
+        api_key = os.getenv("BREVO_API_KEY")
+        sender_email = os.getenv("SENDER_EMAIL")
+        frontend_url = os.getenv("FRONTEND_URL")
 
-        body = f"""
-Click the link below to reset your password:
+        if not api_key or not sender_email or not frontend_url:
+            raise Exception("Missing ENV variables")
 
-{reset_link}
+        reset_link = f"{frontend_url}/reset-password?token={token}"
 
-This link expires in 10 minutes.
-"""
+        headers = {
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json"
+        }
 
-        msg = MIMEText(body)
+        data = {
+            "sender": {
+                "name": "NutriVision",
+                "email": sender_email
+            },
+            "to": [{"email": to_email}],
+            "subject": "Reset Your Password",
+            "htmlContent": f"""
+            <h3>Password Reset</h3>
+            <p>Click below:</p>
+            <a href="{reset_link}">{reset_link}</a>
+            """
+        }
 
-        msg["Subject"] = subject
-        msg["From"] = SMTP_EMAIL
-        msg["To"] = to_email
+        response = requests.post(url, json=data, headers=headers)
 
+        print("Brevo:", response.status_code, response.text)
 
-        print("SMTP_SERVER:", SMTP_SERVER)
-        print("SMTP_PORT:", SMTP_PORT)
-        print("SMTP_EMAIL:", SMTP_EMAIL)
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-
-        server.starttls()
-
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-
-        server.sendmail(
-            SMTP_EMAIL,
-            to_email,
-            msg.as_string()
-        )
-
-        server.quit()
-
-        print("Reset email sent successfully")
+        if response.status_code not in [200, 201]:
+            raise Exception("Email failed")
 
     except Exception as e:
-        print("Email sending failed:", str(e))
-        raise Exception(f"SMTP ERROR: {str(e)}")
-
+        print("EMAIL ERROR:", str(e))
+        raise Exception("Email sending failed")
 
 # ===============================
 # GET CURRENT LOGGED USER
