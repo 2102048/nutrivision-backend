@@ -21,7 +21,6 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ImageClassifier")
 
-
 class FoodClassifier:
     def __init__(self):
         self.indian_model = None
@@ -165,10 +164,8 @@ class FoodClassifier:
             logger.error(f"Inference error: {str(e)}")
             raise HTTPException(status_code=500, detail="Classification failed")
 
-
 # GLOBAL INSTANCE
 classifier = FoodClassifier()
-
 
 async def classify_image(uploaded_file: UploadFile) -> str:
     return await classifier.predict(uploaded_file)

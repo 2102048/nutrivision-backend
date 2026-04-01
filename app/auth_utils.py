@@ -16,11 +16,12 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .models import User
 
+
 # ===============================
 # LOAD ENV VARIABLES
 # ===============================
 
-
+load_dotenv()   # ✅ THIS LINE FIXES YOUR ISSUE
 
 SECRET_KEY = os.getenv("SECRET_KEY", "secret")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
